@@ -1,0 +1,145 @@
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+             xmlns:beans="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+                    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                    http://www.springframework.org/schema/security
+                    http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+    <beans:bean id="springSecurityFilterChain" class="org.springframework.security.web.FilterChainProxy">
+        <filter-chain-map path-type="ant">
+            <filter-chain pattern="/" filters="casValidationFilter, wrappingFilter" />
+            <filter-chain pattern="/secure/receptor" filters="casValidationFilter" />
+            <filter-chain pattern="/j_spring_security_logout" filters="logoutFilter,etf" />
+            <filter-chain pattern="/**" filters="casAuthenticationFilter, casValidationFilter, wrappingFilter, sif,j2eePreAuthFilter,logoutFilter,etf"/>
+        </filter-chain-map>
+    </beans:bean>
+
+    <beans:bean id="sif" class="org.springframework.security.web.context.SecurityContextPersistenceFilter"/>
+
+    <authentication-manager alias="authenticationManager">
+        <authentication-provider ref="preAuthAuthProvider"/>
+    </authentication-manager>
+
+    <beans:bean id="preAuthAuthProvider" class="org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider">
+        <beans:property name="preAuthenticatedUserDetailsService">
+            <beans:bean id="userDetailsServiceWrapper" class="org.springframework.security.core.userdetails.UserDetailsByNameServiceWrapper">
+                <beans:property name="userDetailsService" ref="userSecurityService"/>
+            </beans:bean>
+        </beans:property>
+    </beans:bean>
+
+    <beans:bean id="preAuthEntryPoint" class="org.springframework.security.web.authentication.Http403ForbiddenEntryPoint" />
+
+    <beans:bean id="j2eePreAuthFilter" class="org.springframework.security.web.authentication.preauth.j2ee.J2eePreAuthenticatedProcessingFilter">
+        <beans:property name="authenticationManager" ref="authenticationManager"/>
+        <beans:property name="authenticationDetailsSource">
+            <beans:bean class="org.springframework.security.web.authentication.WebAuthenticationDetailsSource" />
+        </beans:property>
+    </beans:bean>
+
+    <beans:bean id="logoutFilter" class="org.springframework.security.web.authentication.logout.LogoutFilter">
+        <beans:constructor-arg value="https://websrv.gmdsunat.com:8443/cas-server-webapp-3.4.11/logout"/>
+        <beans:constructor-arg>
+            <beans:list>
+                <beans:bean class="org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler"/>
+            </beans:list>
+        </beans:constructor-arg>
+    </beans:bean>
+
+    <beans:bean id="servletContext" class="org.springframework.web.context.support.ServletContextFactoryBean"/>
+
+    <beans:bean id="etf" class="org.springframework.security.web.access.ExceptionTranslationFilter">
+        <beans:property name="authenticationEntryPoint" ref="preAuthEntryPoint"/>
+    </beans:bean>
+
+    <beans:bean id="httpRequestAccessDecisionManager" class="org.springframework.security.access.vote.AffirmativeBased">
+        <beans:property name="allowIfAllAbstainDecisions" value="false"/>
+        <beans:property name="decisionVoters">
+            <beans:list>
+                <beans:ref bean="roleVoter"/>
+            </beans:list>
+        </beans:property>
+    </beans:bean>
+
+
+
+    <beans:bean id="roleVoter" class="org.springframework.security.access.vote.RoleVoter"/>
+
+    <beans:bean id="securityContextHolderAwareRequestFilter" class="org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter"/>
+
+    <beans:bean class="org.jasig.cas.client.validation.Cas20ServiceTicketValidator" id="ticketValidator">
+        <beans:constructor-arg index="0" value="https://websrv.gmdsunat.com:8443/cas-server-webapp-3.4.11/" />
+        <beans:property name="proxyGrantingTicketStorage" ref="proxyGrantingTicketStorage" />
+        <beans:property name="proxyCallbackUrl" value="https://websrv.gmdsunat.com:8443/productividad/" />
+    </beans:bean>
+
+    <beans:bean id="proxyGrantingTicketStorage" class="org.jasig.cas.client.proxy.ProxyGrantingTicketStorageImpl" />
+
+    <beans:bean id="casAuthenticationFilter" class="org.jasig.cas.client.authentication.AuthenticationFilter">
+        <beans:property name="casServerLoginUrl" value="https://websrv.gmdsunat.com:8443/cas-server-webapp-3.4.11/login" />
+        <beans:property name="serverName" value="https://websrv.gmdsunat.com:8443" />
+    </beans:bean>
+
+    <beans:bean id="casValidationFilter" class="org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter">
+        <beans:property name="serverName" value="https://websrv.gmdsunat.com:8443" />
+        <beans:property name="exceptionOnValidationFailure" value="true" />
+        <beans:property name="proxyGrantingTicketStorage" ref="proxyGrantingTicketStorage" />
+        <beans:property name="redirectAfterValidation" value="true" />
+        <beans:property name="ticketValidator" ref="ticketValidator" />
+        <beans:property name="proxyReceptorUrl" value="/secure/receptor" />
+    </beans:bean>
+
+    <beans:bean id="wrappingFilter" class="com.gmd.productividad.util.HttpServletRequestWrapperFilter" />
+
+
+    <!--    <beans:bean id="fsi" class="org.springframework.security.web.access.intercept.FilterSecurityInterceptor">
+            <beans:property name="authenticationManager" ref="authenticationManager"/>
+            <beans:property name="accessDecisionManager" ref="httpRequestAccessDecisionManager"/>
+            <beans:property name="securityMetadataSource">
+                <filter-invocation-definition-source>
+                    <intercept-url pattern="/secure/extreme/**" access="ROLE_SUPERVISOR"/>
+                    <intercept-url pattern="/secure/**" access="ROLE_USER"/>
+                    <intercept-url pattern="/**" access="ROLE_USER"/>
+                </filter-invocation-definition-source>
+            </beans:property>
+        </beans:bean>-->
+    <!--
+
+        <http use-expressions="true" >
+            <access-denied-handler ref="accessDeniedHandler"/>
+            <intercept-url
+                    pattern="/login.jsf" access="permitAll" />
+
+            <intercept-url pattern="/static/**" access="permitAll" />
+            <intercept-url pattern="/javax.faces.resource/**" access="permitAll" />
+
+
+            <intercept-url pattern="/asignacionTrabajo.jsf"
+                           access="hasRole ( 'ROL_SUPERVISOR' )" />
+            <intercept-url pattern="/consultaExperiencia.jsf"
+                           access="hasRole ( 'ROL_SUPERVISOR' )" />
+            <intercept-url pattern="/asignacionTrabajo.jsf"
+                            access="hasRole ( 'ROL_COLABORADOR' ) or hasRole ( 'ROL_SUPERVISOR' )" />
+            <intercept-url pattern="/**"
+                           access="hasRole ( 'ROL_COLABORADOR' ) or hasRole ( 'ROL_SUPERVISOR' )" />
+
+            <intercept-url
+                    pattern="/**" />
+                <form-login
+                        login-processing-url="/j_spring_security_check"
+                        login-page="/login.jsf"
+                        default-target-url="/index.jsf"
+                        authentication-failure-url="/login.jsf"/>
+            <logout/>
+        </http>
+    -->
+
+
+    <global-method-security secured-annotations="enabled"/>
+</beans:beans>
+
+
+
+
+
+
