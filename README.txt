@@ -1,16 +1,16 @@
-## Aplicacion con Spring
+# Aplicacion con Spring
 
 	Aplicacion con el uso de Spring security, Mybatis como persistencia y JSF + Primefaces como vista.
 
-#	Requisitos
+## Requisitos
 	Java 6 o superior
 	productividad, aplicar un mvn install
 	Servidor de aplicaciones JBoss.
 	
-# Base de Datos 
+## Base de Datos 
 	Conexion a Base de Datos Oracle.
 		
-#  Configuración de Bd en el Proyecto	
+## Configuración de Bd en el Proyecto	
 
 	Modificar el archivo: application-config.default.properties
 
