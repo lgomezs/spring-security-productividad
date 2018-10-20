@@ -1,4 +1,4 @@
-# Aplicacion con Spring
+## Aplicacion con Spring
 
 	Aplicacion con el uso de Spring security, Mybatis como persistencia y JSF + Primefaces como vista.
 
